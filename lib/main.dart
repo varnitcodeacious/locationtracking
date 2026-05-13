@@ -1,14 +1,23 @@
+import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'firebase_options.dart';
+import 'location_debug/app_lifecycle_tracker.dart';
+import 'location_debug/location_logger.dart';
 import 'login_screen.dart';
 import 'driver_screen.dart';
 import 'auth_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await LocationLogger.instance.restoreFromDisk();
+  AppLifecycleTracker.onLifecycleStateChanged = (state) {
+    unawaited(LocationLogger.instance.logLifecycleState(state));
+  };
+  AppLifecycleTracker.instance.attach();
 
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,

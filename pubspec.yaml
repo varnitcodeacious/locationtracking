@@ -1,0 +1,35 @@
+name: locationtracking
+description: "A new Flutter project."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.11.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+  geolocator: ^11.0.0
+  connectivity_plus: ^6.0.0
+  permission_handler: ^11.0.0
+  dio: ^5.0.0
+  sqflite: ^2.3.0
+  path: ^1.9.0
+  firebase_core: any
+  firebase_messaging: any
+  firebase_auth: any
+  firebase_database: any
+  flutter_local_notifications: any
+  cloud_firestore: any
+  shared_preferences: ^2.2.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1036818578536",
+    "project_id": "location-tracking-536de",
+    "storage_bucket": "location-tracking-536de.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1036818578536:android:2c2a4f8771203b4626cfdd",
+        "android_client_info": {
+          "package_name": "com.locationtracking.locationtracking"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCF1LIVrMN01EPRRMKHWv7EbX18QkfF6TI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io' show File;
 
 import 'package:excel/excel.dart';
@@ -17,6 +18,22 @@ class LocationLogSheet extends StatefulWidget {
 
 class _LocationLogSheetState extends State<LocationLogSheet> {
   bool _exporting = false;
+  Timer? _ingestTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(LocationLogger.instance.ingestBackgroundTrackerLines());
+    _ingestTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      unawaited(LocationLogger.instance.ingestBackgroundTrackerLines());
+    });
+  }
+
+  @override
+  void dispose() {
+    _ingestTimer?.cancel();
+    super.dispose();
+  }
 
   Future<void> _exportExcel(List<LocationLogEntry> entries) async {
     if (entries.isEmpty) {
@@ -35,7 +52,6 @@ class _LocationLogSheetState extends State<LocationLogSheet> {
       final sheet = excel[sheetName];
       sheet.appendRow([
         TextCellValue('DateTime'),
-        TextCellValue('Type'),
         TextCellValue('Latitude'),
         TextCellValue('Longitude'),
         TextCellValue('App version'),
@@ -46,13 +62,8 @@ class _LocationLogSheetState extends State<LocationLogSheet> {
       for (final e in entries) {
         sheet.appendRow([
           TextCellValue(e.dateTime.toIso8601String()),
-          TextCellValue(e.isLifecycleOnly ? 'lifecycle' : 'position'),
-          TextCellValue(
-            e.isLifecycleOnly ? '—' : e.latitude.toStringAsFixed(6),
-          ),
-          TextCellValue(
-            e.isLifecycleOnly ? '—' : e.longitude.toStringAsFixed(6),
-          ),
+          TextCellValue(e.latitude.toStringAsFixed(6)),
+          TextCellValue(e.longitude.toStringAsFixed(6)),
           TextCellValue(e.appVersion),
           TextCellValue(e.deviceName),
           TextCellValue(e.osVersion),
@@ -202,7 +213,6 @@ class _LocationLogSheetState extends State<LocationLogSheet> {
                                   Theme.of(context).colorScheme.surfaceContainerHighest,
                                 ),
                                 columns: const [
-                                  DataColumn(label: Text('Type')),
                                   DataColumn(label: Text('Date / time')),
                                   DataColumn(label: Text('Lat, Lng')),
                                   DataColumn(label: Text('App state')),
@@ -216,21 +226,13 @@ class _LocationLogSheetState extends State<LocationLogSheet> {
                                       cells: [
                                         DataCell(
                                           Text(
-                                            e.isLifecycleOnly ? 'life' : 'gps',
-                                            style: const TextStyle(fontSize: 11),
-                                          ),
-                                        ),
-                                        DataCell(
-                                          Text(
                                             e.dateTime.toLocal().toString(),
                                             style: const TextStyle(fontSize: 12),
                                           ),
                                         ),
                                         DataCell(
                                           Text(
-                                            e.isLifecycleOnly
-                                                ? '—'
-                                                : '${e.latitude.toStringAsFixed(5)}, ${e.longitude.toStringAsFixed(5)}',
+                                            '${e.latitude.toStringAsFixed(5)}, ${e.longitude.toStringAsFixed(5)}',
                                           ),
                                         ),
                                         DataCell(Text(e.appState)),

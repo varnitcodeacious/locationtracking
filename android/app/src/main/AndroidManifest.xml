@@ -33,6 +33,10 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <service
+            android:name="com.locationtracking.locationtracking.TaskRemovedWatcherService"
+            android:exported="false"
+            android:stopWithTask="false" />
     </application>
     <queries>
         <intent>

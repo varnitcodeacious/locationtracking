@@ -3,13 +3,14 @@ import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import 'auth_service.dart';
+import 'background_tracking/background_location_tracking_service.dart';
 import 'battery_optimization_request.dart';
-import 'geolocator_based/geolocator_location_service.dart';
 import 'location_debug/location_log_sheet.dart';
+import 'location_debug/location_logger.dart';
 
 class DriverScreen extends StatefulWidget {
   const DriverScreen({super.key});
@@ -19,25 +20,32 @@ class DriverScreen extends StatefulWidget {
 
 class _DriverScreenState extends State<DriverScreen> {
   final AuthService _authService = AuthService();
-  final GeolocatorLocationService _locationService = GeolocatorLocationService();
+  final BackgroundLocationTrackingService _locationService =
+      BackgroundLocationTrackingService();
   Timer? _statusTimer;
   bool _isOnDuty = false;
   bool _dutyBusy = false;
   bool _permBusy = false;
 
   bool _locationServiceEnabled = false;
-  LocationPermission _locationPermission = LocationPermission.denied;
+  PermissionStatus _whenInUse = PermissionStatus.denied;
+  PermissionStatus _always = PermissionStatus.denied;
   PermissionStatus _batteryOptimizationStatus = PermissionStatus.denied;
 
   @override
   void initState() {
     super.initState();
+    pakageInfoLog();
     _refreshFromService();
     _refreshPermissionStatus();
+
     _statusTimer = Timer.periodic(const Duration(seconds: 5), (_) {
       if (!mounted) return;
       _refreshPermissionStatus();
-      if (_isOnDuty) _refreshFromService();
+      if (_isOnDuty) {
+        _refreshFromService();
+        unawaited(LocationLogger.instance.ingestBackgroundTrackerLines());
+      }
     });
   }
 
@@ -46,10 +54,17 @@ class _DriverScreenState extends State<DriverScreen> {
     _statusTimer?.cancel();
     super.dispose();
   }
-
+  String? _appVersion;
+Future<void> pakageInfoLog() async {
+  final packageInfo = await PackageInfo.fromPlatform();
+  _appVersion = '${packageInfo.version}+${packageInfo.buildNumber}';
+}
   Future<void> _refreshPermissionStatus() async {
-    final svc = await Geolocator.isLocationServiceEnabled();
-    final perm = await Geolocator.checkPermission();
+    final svc = await Permission.location.serviceStatus;
+    final whenInUse = Platform.isIOS
+        ? await Permission.locationWhenInUse.status
+        : await Permission.location.status;
+    final always = await Permission.locationAlways.status;
     PermissionStatus battery = PermissionStatus.denied;
     if (!kIsWeb && Platform.isAndroid) {
       battery = await Permission.ignoreBatteryOptimizations.status;
@@ -58,8 +73,9 @@ class _DriverScreenState extends State<DriverScreen> {
     }
     if (!mounted) return;
     setState(() {
-      _locationServiceEnabled = svc;
-      _locationPermission = perm;
+      _locationServiceEnabled = svc == ServiceStatus.enabled;
+      _whenInUse = whenInUse;
+      _always = always;
       _batteryOptimizationStatus = battery;
     });
   }
@@ -75,18 +91,19 @@ class _DriverScreenState extends State<DriverScreen> {
   bool get _blockingBusy => _dutyBusy || _permBusy;
 
   String get _locationPermissionLabel {
-    switch (_locationPermission) {
-      case LocationPermission.denied:
-        return 'Denied';
-      case LocationPermission.deniedForever:
-        return 'Denied permanently';
-      case LocationPermission.whileInUse:
-        return 'While in use only';
-      case LocationPermission.always:
-        return 'Always / All the time';
-      case LocationPermission.unableToDetermine:
-        return 'Unknown';
+    if (_always.isGranted) {
+      return 'Always / All the time';
     }
+    if (_whenInUse.isGranted) {
+      return 'While in use only';
+    }
+    if (_whenInUse.isPermanentlyDenied || _always.isPermanentlyDenied) {
+      return 'Denied permanently';
+    }
+    if (_whenInUse.isDenied && !_whenInUse.isGranted) {
+      return 'Denied';
+    }
+    return 'Unknown';
   }
 
   String get _batteryLabel {
@@ -206,6 +223,7 @@ class _DriverScreenState extends State<DriverScreen> {
                   '${_locationServiceEnabled ? "ON" : "OFF"}'),
               Text('Location access: $_locationPermissionLabel'),
               Text('Battery optimization: $_batteryLabel'),
+              Text('App version: $_appVersion'),
               const SizedBox(height: 12),
               FilledButton.icon(
                 onPressed: _permBusy ? null : _requestPermissionsTap,

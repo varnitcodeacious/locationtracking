@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'tracking_prefs_keys.dart';
+
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseDatabase _db = FirebaseDatabase.instance;
@@ -52,6 +54,7 @@ class AuthService {
   Future<void> signOut() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('driverId');
+    await prefs.remove(kTrackingDriverIdPrefsKey);
     await _auth.signOut();
   }
 
@@ -59,6 +62,7 @@ class AuthService {
   Future<void> _updateDriverData(User user, {String? name}) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('driverId', user.uid);
+    await prefs.setString(kTrackingDriverIdPrefsKey, user.uid);
 
     Map<String, dynamic> data = {
       'driver_id': user.uid,

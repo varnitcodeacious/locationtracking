@@ -20,7 +20,7 @@ class AppLifecycleTracker with WidgetsBindingObserver {
     onLifecycleStateChanged?.call(state);
   }
 
-  /// Set from [main] before [attach] so lifecycle rows are persisted.
+  /// Set from [main] before [attach] for Firebase app-state sync and log ingest.
   static void Function(AppLifecycleState state)? onLifecycleStateChanged;
 
   static String _mapState(AppLifecycleState? state) {
